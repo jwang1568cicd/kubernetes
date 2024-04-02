@@ -1,0 +1,100 @@
+# kubernetes
+1. First, you have minikube installed and in operational state as shown in the README.minikube.
+2. This README is focusing on using minikube to start a multinodes cluster withdemo_start.sh or cli: minikube start --nodes 3 -p multinode-demo.
+3. The cli, minikube status -p multinode-demo, could be used to examin the VM status.
+
+4. Deploy the demo deployment with cli,  kubectl apply -f demo-deployment.yaml.
+$ cat demo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demohello
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  selector:
+    matchLabels:
+      app: demohello
+  template:
+    metadata:
+      labels:
+        app: demohello
+    spec:
+      affinity:
+        # This ensures pods will land on separate hosts
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions: [{ key: app, operator: In, values: [hello] }]
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: demohello-from
+          image: pbitty/hello-from:latest
+          ports:
+            - name: http
+              containerPort: 80
+      terminationGracePeriodSeconds: 1
+
+
+
+5. Roll out with cli, kubectl rollout status deployment/demohello, and apply with cli, kubectl apply -f demo-svc.yaml.
+
+Use kubectl get svc or kubectl get deploy to find out the deployment status. 
+Use minikube service list to find out the service port and verify it with curl.
+*** sample of console log
+
+$ kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+demohello    NodePort    10.106.54.96   <none>        80:30000/TCP   16s
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        66m
+
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ minikube service list -p multinode-demo
+|-------------|------------|--------------|-----------------------------|
+|  NAMESPACE  |    NAME    | TARGET PORT  |             URL             |
+|-------------|------------|--------------|-----------------------------|
+| default     | demohello  |           80 | http://192.168.59.105:30000 |
+| default     | kubernetes | No node port |                             |
+| kube-system | kube-dns   | No node port |                             |
+|-------------|------------|--------------|-----------------------------|
+
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-75gkf (10.244.0.4)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$
+
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-9hnlk (10.244.0.3)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-9hnlk (10.244.0.3)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-75gkf (10.244.0.4)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-75gkf (10.244.0.4)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-75gkf (10.244.0.4)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-9hnlk (10.244.0.3)
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/minikube
+$ curl -s  http://192.168.59.105:30000
+Hello from demohello-77848b5444-6ltfx (10.244.0.5)
+
+
+6. Upon the project completion, clena up deployment before termination by invoking stop_demo.sh. 
+                                                                       
+  601  kubectl get svc
+  602  kubectl delete svc demohello
+  603  kubectl get deploy
+  604  kubectl del deploy demohello
+  605  kubectl delete deploy demohello
+  606  ./stop_demo.sh
