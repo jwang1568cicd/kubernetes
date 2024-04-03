@@ -1,0 +1,70 @@
+# kubernetes
+1. First, used web UI to create the EC2 for kops with Ubuntu t2.micro with key-pair and kops security group with AWS cli support via remote ssh session.
+
+2. You will need to install the kubectl and kops with the following instructions.
+a. Kubectl Installation Link: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
+For example, here is the link I used for the HP Elitebook:
+ curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+
+b. Kops Installation  Link : https://kops.sigs.k8s.io/getting_started/install/
+Use this link for using v1.26.4 of Kops which is a stable versiom
+https://github.com/kubernetes/kops/releases/tag/v1.26.4
+
+this link " https://kops.sigs.k8s.io/getting_started/install/
+ curl -Lo kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
+
+chmod +x kops
+sudo mv kops /usr/local/bin/kops
+
+3. Here is the 1st class example for invoking cli to start the cluster with 2 nodes 
+
+
+kops create cluster --name=kubevpro.jerryaws.xyz \ 
+--state=s3://vprofile-kops-state-cicd --zones=us-east-1a,us-east-1b \
+--node-count=2 --node-size=t3.small --master-size=t3.medium --dns-zone=kubevpro.jerryaws.xyz \
+--node-volume-size=8 --master-volume-size=8
+
+kops update cluster --name kubevpro.jerryaws.xyz --state=s3://vprofile-kops-state-cicd --yes --admin
+kops rolling-update cluster --state=s3://vprofile-kops-state-cicd
+kops validate cluster --state=s3://vprofile-kops-state-cicd
+kops delete cluster --name=kubevpro.jerryaws.xyz --state=s3://vprofile-kops-state-cicd --yes
+
+
+4. Here is the 2nd example with yaml files and AWS ec2 instance with AWS cli:
+a. AWS cli to setup the EC2 and kubectl to manage it
+
+https://github.com/onjerryaws/vprofile-project/tree/kube-app
+
+aws ec2 create-volume --availability-zone=us-east-1a --size=3 --volume-type=gp3
+kubectl get nodes --show-labels
+kubectl get nodes
+kubectl describe node i-03432b33195998142
+kubectl label nodes i-03432b33195998142 zone=us-east-1b
+kubectl label nodes i-03eaa3d34a5526705 zone=us-east-1a
+
+
+b. kops crate cluster and kubectl to manage it 
+$ cd vpro-app/
+
+CICD-Student@DESKTOP-FNUA4LH MINGW64 ~/cicdclass/vprofile-project/kubernetes/vpro-app (kubernetes-setup)
+$ ls -la
+total 19
+drwxr-xr-x 1 CICD-Student 197121   0 Mar 28 09:42 ./
+drwxr-xr-x 1 CICD-Student 197121   0 Mar 28 09:42 ../
+-rw-r--r-- 1 CICD-Student 197121 134 Mar 28 09:42 app-secret.yml
+-rw-r--r-- 1 CICD-Student 197121 188 Mar 28 09:42 db-CIP.yml
+-rw-r--r-- 1 CICD-Student 197121 195 Mar 28 09:42 mc-CIP.yml
+-rw-r--r-- 1 CICD-Student 197121 385 Mar 28 09:42 mcdep.yml
+-rw-r--r-- 1 CICD-Student 197121 194 Mar 28 09:42 rmq-CIP-service.yml
+-rw-r--r-- 1 CICD-Student 197121 634 Mar 28 09:42 rmq-dep.yml
+-rw-r--r-- 1 CICD-Student 197121 200 Mar 28 09:42 vproapp-service.yml
+-rw-r--r-- 1 CICD-Student 197121 890 Mar 28 09:42 vproappdep.yml
+-rw-r--r-- 1 CICD-Student 197121 649 Mar 28 09:42 vprodbdep.yml
+
+kubectl create -f . ### multiple yml files with single CLI
+kubectl get deploy
+kubectl get pod
+kubctl get svc
+
+

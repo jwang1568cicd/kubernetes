@@ -1,0 +1,5 @@
+This scripts directory contains the shell script to invoke the demo project by
+1. initialize the VM with  start_demo.sh
+2. invoke the deploy_demohello.sh to deploy the hellodemo services
+3. tear down the service by invoking the clean_demohello.sh
+4. terminate the demo project VM by invoking  stop_demo.sh
